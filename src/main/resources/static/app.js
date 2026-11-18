@@ -11,11 +11,12 @@ function render(){
  if(!state)return;$('workspace').hidden=!state.ready;$('welcome').hidden=state.ready;$('free').textContent=state.ready?state.free:'—';$('openCount').textContent=state.ready?state.opened.length:'—';
  if(!state.ready){$('welcomeText').textContent=state.error?'现有磁盘加载失败：'+state.error+'。可先备份磁盘文件，再选择重新初始化。':'首次运行需要创建磁盘镜像。只会操作本项目的模拟磁盘文件。';return;}
  if(cwd!=='/'&&!state.entries.some(e=>e.path===cwd&&e.directory))cwd='/';
- $('cwd').textContent=cwd;$('tree').replaceChildren();
- for(const path of ['/',...state.entries.filter(e=>e.directory).map(e=>e.path)]){const b=el('button',path==='/'?'▦ 根目录':('  '.repeat(path.split('/').length-2)+'▸ '+path.split('/').pop()),path===cwd?'active':'');b.title=path;b.onclick=()=>navigate(path);$('tree').append(b);}
+ $('cwd').textContent=cwd;$('headerPath').textContent=selected||cwd;$('tree').replaceChildren();
+ const root=el('button','▾  /',cwd==='/'&&!selected?'active':'');root.onclick=()=>{selected='';navigate('/');};$('tree').append(root);
+ for(const e of state.entries){const b=el('button',(e.directory?'▾  ':'▤  ')+e.name,(e.directory?e.path===cwd:e.path===selected)?'active':'');b.style.paddingLeft=(12+(e.path.split('/').length-2)*16)+'px';b.title=e.path;b.onclick=()=>{selected=e.path;if(e.directory)navigate(e.path);else{cwd=parent(e.path);$('path').value=e.path;$('attribute').value=e.attribute;render();}};$('tree').append(b);}
  $('files').replaceChildren();const files=state.entries.filter(e=>parent(e.path)===cwd);
  for(const e of files){const row=el('tr',undefined,e.path===selected?'selected':'');for(const text of [(e.directory?'▸ ':'▤ ')+e.name,attrs[e.attribute],e.start,e.blocks])row.append(el('td',text));row.onclick=()=>{selected=e.path;$('path').value=e.path;if(!e.directory)$('attribute').value=e.attribute;render();};row.ondblclick=()=>{if(e.directory)navigate(e.path);};$('files').append(row);}
- if(!files.length){const row=el('tr');const td=el('td','目录为空 · 在右侧创建第一个文件','empty');td.colSpan=4;row.append(td);$('files').append(row);}
+ if(!files.length){const row=el('tr');const td=el('td','目录为空 · 使用上方工具栏创建文件或目录','empty');td.colSpan=4;row.append(td);$('files').append(row);}
  const chosen=state.entries.find(e=>e.path===selected);$('chain').textContent=chosen?chosen.chain.join(' → ')+' → END (255)':'选择文件查看分配链';$('disk').replaceChildren();
  for(const b of state.blocks){const button=el('button',String(b.id).padStart(2,'0'),b.kind+(chosen?.chain.includes(b.id)?' highlight':''));button.title=`块 ${b.id} | FAT ${b.fat} | ${b.owner||b.kind}`;button.setAttribute('aria-label',button.title);button.onclick=()=>inspect(b);$('disk').append(button);}
  $('opened').replaceChildren();for(const o of state.opened){const row=el('tr');for(const text of [o.path,attrs[o.attribute],o.start,o.mode==='w'?'写 / APPEND':'读 / READ',o.length,`${o.read.block} : ${o.read.offset}`,`${o.write.block} : ${o.write.offset}`])row.append(el('td',text));$('opened').append(row);}
@@ -37,7 +38,8 @@ async function operate(operation){
  try{
   const data=await request('/api/operations',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(command)});state=data.state;
   if(operation==='initialize'){cwd='/';selected='';}
-  if(operation==='create_file'||operation==='md')selected=command.path;
+  if(operation==='create_file'||operation==='md'){selected=command.path;cwd=parent(command.path);}
+  if(operation==='delete_file'||operation==='rd')selected='';
   const result=data.result;
   if(result&&typeof result==='object'&&!Array.isArray(result)&&'hex'in result){$('output').textContent=result.text||'（空内容）';$('outputHex').textContent=result.hex||'（0 字节）';$('resultMeta').textContent=result.bytes+' bytes';}
   else{$('output').textContent=Array.isArray(result)?JSON.stringify(result,null,2):`${operation} · ${command.path}\n${result}`;$('outputHex').textContent='—';$('resultMeta').textContent='';}
