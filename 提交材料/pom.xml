@@ -4,6 +4,8 @@
   <groupId>cn.edu.oslab</groupId><artifactId>fat-lab</artifactId><version>1.0.0</version>
   <properties><java.version>21</java.version><project.build.sourceEncoding>UTF-8</project.build.sourceEncoding></properties>
   <dependencies>
+    <dependency><groupId>org.openjfx</groupId><artifactId>javafx-controls</artifactId><version>21.0.10</version></dependency>
+    <dependency><groupId>org.openjfx</groupId><artifactId>javafx-web</artifactId><version>21.0.10</version></dependency>
     <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency>
     <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-test</artifactId><scope>test</scope></dependency>
   </dependencies>

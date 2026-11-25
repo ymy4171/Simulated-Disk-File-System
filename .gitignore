@@ -2,3 +2,7 @@ target/
 data/
 .m2/
 *.log
+
+# Generated application packages; distribute through GitHub Releases
+/release/
+/提交材料/release/
